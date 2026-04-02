@@ -26,15 +26,14 @@ public class MainActivity extends ComponentActivity {
     private SharedPreferences prefs;
     private ModelNode currentModelNode;
 
-    // 1. File Picker Logic: Storage se model pick karne ke liye
+    // File picker launcher – persistent URI permission granted
     private final ActivityResultLauncher<Intent> pickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri uri = result.getData().getData();
                     if (uri != null) {
-                        // Permanent Permission: Taaki restart par access na khoye
-                        getContentResolver().takePersistableUriPermission(uri, 
+                        getContentResolver().takePersistableUriPermission(uri,
                                 Intent.FLAG_GRANT_READ_URI_PERMISSION);
                         saveAndRender(uri.toString());
                     }
@@ -48,31 +47,27 @@ public class MainActivity extends ComponentActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // UI Engine Styling
         setupEngineUI();
+        applyFullscreen();
 
         sceneView = findViewById(R.id.sceneView);
         btnUpload = findViewById(R.id.btnUpload);
         btnRecent = findViewById(R.id.btnRecentModel);
         prefs = getSharedPreferences("SpeedEngineData", MODE_PRIVATE);
 
-        // Fullscreen apply
-        applyFullscreen();
-
-        // 2. Checker System: Last project load logic
-        String lastModel = prefs.getString("last_model_uri", "");
-        if (!lastModel.isEmpty()) {
+        String lastModelUri = prefs.getString("last_model_uri", "");
+        if (!lastModelUri.isEmpty()) {
             btnRecent.setVisibility(View.VISIBLE);
-            btnRecent.setOnClickListener(v -> renderModel(lastModel));
-            // Auto-load on startup
-            renderModel(lastModel);
+            btnRecent.setOnClickListener(v -> renderModel(lastModelUri));
+            renderModel(lastModelUri);  // auto-load on startup
+        } else {
+            btnRecent.setVisibility(View.GONE);
         }
 
-        // Upload Button Click
         btnUpload.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
-            intent.setType("*/*"); // .glb selection recommended
+            intent.setType("model/gltf-binary"); // restrict to .glb for performance
             pickerLauncher.launch(intent);
         });
     }
@@ -84,26 +79,32 @@ public class MainActivity extends ComponentActivity {
     }
 
     private void renderModel(String uriPath) {
-        // Purane model ko remove karna
+        // Remove previous model cleanly to avoid memory leaks
         if (currentModelNode != null) {
-            sceneView.getNodes().remove(currentModelNode);
+            sceneView.removeChild(currentModelNode);
+            currentModelNode.destroy(); // free GPU resources if available
         }
 
-        Toast.makeText(this, "Engine: Loading 3D Logic...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Engine: Loading 3D Model...", Toast.LENGTH_SHORT).show();
 
-        // Naya Model Node create karna
+        Uri modelUri = Uri.parse(uriPath);
         currentModelNode = new ModelNode(sceneView.getEngine());
-        
-        // Java Compatible Method Call
+
+        // Correct async loading using Uri (no deprecated methods)
         currentModelNode.loadModelAsync(
                 this,
-                uriPath,
-                true, // autoAnimate
-                0.5f, // scale
-                null, // center
+                modelUri,
+                true,      // autoAnimate
+                0.5f,      // scale
+                null,      // center (optional)
                 model -> {
                     sceneView.addChild(currentModelNode);
                     Toast.makeText(this, "Rendering Active", Toast.LENGTH_SHORT).show();
+                    return null;
+                },
+                error -> {  // error callback
+                    Toast.makeText(this, "Failed to load model: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                    currentModelNode = null;
                     return null;
                 }
         );
@@ -118,11 +119,11 @@ public class MainActivity extends ComponentActivity {
     private void applyFullscreen() {
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
         );
     }
 
