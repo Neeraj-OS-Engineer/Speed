@@ -7,6 +7,7 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
+    // FAIL_ON_PROJECT_REPOS ensures all libraries come from these central repos
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
@@ -14,6 +15,8 @@ dependencyResolutionManagement {
     }
 }
 
+// Project ka naam "Speed" rakha gaya hai
 rootProject.name = "Speed"
 
+// Aapka main app module include kiya gaya hai
 include(":app")
