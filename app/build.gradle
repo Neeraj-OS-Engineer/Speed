@@ -25,13 +25,15 @@ android {
 }
 
 dependencies {
-    // Only one SceneView dependency – use the latest stable
+    // Only ONE SceneView dependency (3.6.0)
     implementation 'io.github.sceneview:sceneview:3.6.0'
     
-    // Required for ARCore (if you need AR features)
+    // ARCore (optional, but required for some SceneView features)
     implementation 'com.google.ar:core:1.39.0'
 
-    // Android support libs
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    // Material Design for drawer and dialogs
     implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.drawerlayout:drawerlayout:1.2.0'
+    implementation 'androidx.recyclerview:recyclerview:1.3.0'
 }
