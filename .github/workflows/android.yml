@@ -11,11 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Repository se code fetch karna
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 2. Java 17 Setup (SceneView/Filament ke liye mandatory)
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
@@ -23,23 +21,18 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    # 3. Gradle execution permission dena
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    # 4. Library Audit (Konsi library kitne MB ki hai aur kya download hua)
-    - name: Library Dependency & Size Audit
-      run: |
-        ./gradlew app:dependencies > library_audit_report.txt
-        echo "--- DEPENDENCY TREE GENERATED ---"
+    # Library checking aur size report
+    - name: Library Audit
+      run: ./gradlew app:dependencies > library_audit.txt
 
-    # 5. Build Process with Stacktrace (Errors pakadne ke liye)
+    # YAHAN FIX HAI: continue-on-error hata diya hai takki error screen par dikhe
     - name: Build Debug APK
       run: ./gradlew assembleDebug --stacktrace --info
-      continue-on-error: true
 
-    # 6. Automatic Report & APK Download (ZIP Package)
-    # Ye step hamesha chalega chahe build fail ho ya pass
+    # Artifacts upload (APK aur Reports)
     - name: Upload Build Artifacts
       if: always()
       uses: actions/upload-artifact@v4
@@ -48,14 +41,4 @@ jobs:
         path: |
           app/build/outputs/apk/debug/*.apk
           app/build/reports/
-          library_audit_report.txt
-
-    # 7. Final Status Verification
-    - name: Final Build Check
-      run: |
-        if [ ! -f app/build/outputs/apk/debug/app-debug.apk ]; then
-          echo "BUILD FAILED: Please download the '3D-Engine-Build-Package' from Artifacts to see error reports."
-          exit 1
-        else
-          echo "BUILD SUCCESSFUL: APK and Reports are ready."
-        fi
+          library_audit.txt
