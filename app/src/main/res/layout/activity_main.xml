@@ -2,11 +2,45 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"> <TextView
+    android:background="#000000">
+
+    <io.github.sceneview.SceneView
+        android:id="@+id/sceneView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="AI LOGIC RUNNING..."
-        android:textColor="#00FF00"
-        android:layout_centerInParent="true" />
+        android:orientation="vertical"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:padding="10dp">
+
+        <Button
+            android:id="@+id/btnRecentModel"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:text="REC"
+            android:visibility="gone"
+            android:background="@android:drawable/ic_menu_save" />
+            
+        <TextView
+            android:id="@+id/txtStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#00FF00"
+            android:textSize="10sp"
+            android:text="ENGINE: READY" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnUpload"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="20dp"
+        android:text="OPEN PROJECT" />
 
 </RelativeLayout>
