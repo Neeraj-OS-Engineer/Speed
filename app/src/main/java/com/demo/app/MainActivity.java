@@ -11,6 +11,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.Toast;
+
 import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -18,7 +19,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import io.github.sceneview.SceneView;
 import io.github.sceneview.node.ModelNode;
 
-// Note: ComponentActivity use kar rahe hain modern File Picker ke liye
 public class MainActivity extends ComponentActivity {
 
     private SceneView sceneView;
@@ -26,14 +26,17 @@ public class MainActivity extends ComponentActivity {
     private SharedPreferences prefs;
     private ModelNode currentModelNode;
 
-    // 1. File Picker Logic
-    private final ActivityResultLauncher<Intent> filePickerLauncher = registerForActivityResult(
+    // 1. File Picker Logic: Storage se model pick karne ke liye
+    private final ActivityResultLauncher<Intent> pickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    Uri fileUri = result.getData().getData();
-                    if (fileUri != null) {
-                        saveAndLoadModel(fileUri.toString());
+                    Uri uri = result.getData().getData();
+                    if (uri != null) {
+                        // Permanent Permission: Taaki restart par access na khoye
+                        getContentResolver().takePersistableUriPermission(uri, 
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        saveAndRender(uri.toString());
                     }
                 }
             }
@@ -45,57 +48,56 @@ public class MainActivity extends ComponentActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // UI Setup
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        getWindow().setStatusBarColor(Color.BLACK);
+        // UI Engine Styling
+        setupEngineUI();
 
         sceneView = findViewById(R.id.sceneView);
         btnUpload = findViewById(R.id.btnUpload);
         btnRecent = findViewById(R.id.btnRecentModel);
-        prefs = getSharedPreferences("EngineData", MODE_PRIVATE);
+        prefs = getSharedPreferences("SpeedEngineData", MODE_PRIVATE);
 
-        applyFullscreenLogic();
+        // Fullscreen apply
+        applyFullscreen();
 
-        // 2. Auto-Load System (JSON/Pref logic)
-        String savedUri = prefs.getString("last_model_uri", "");
-        if (!savedUri.isEmpty()) {
+        // 2. Checker System: Last project load logic
+        String lastModel = prefs.getString("last_model_uri", "");
+        if (!lastModel.isEmpty()) {
             btnRecent.setVisibility(View.VISIBLE);
-            btnRecent.setOnClickListener(v -> load3DModel(savedUri));
-            // Chahein to yahan auto-load bhi kar sakte hain bina click kiye
-            load3DModel(savedUri); 
+            btnRecent.setOnClickListener(v -> renderModel(lastModel));
+            // Auto-load on startup
+            renderModel(lastModel);
         }
 
-        // Open Storage to pick .glb
+        // Upload Button Click
         btnUpload.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
-            intent.setType("*/*"); // Saari files dikhayega, user .glb select kare
-            filePickerLauncher.launch(intent);
+            intent.setType("*/*"); // .glb selection recommended
+            pickerLauncher.launch(intent);
         });
     }
 
-    private void saveAndLoadModel(String uriString) {
-        // Save to "JSON" (Persistent Storage)
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString("last_model_uri", uriString);
-        editor.apply();
-
+    private void saveAndRender(String uriPath) {
+        prefs.edit().putString("last_model_uri", uriPath).apply();
         btnRecent.setVisibility(View.VISIBLE);
-        load3DModel(uriString);
+        renderModel(uriPath);
     }
 
-    private void load3DModel(String uriString) {
+    private void renderModel(String uriPath) {
+        // Purane model ko remove karna
         if (currentModelNode != null) {
-            sceneView.removeChild(currentModelNode);
+            sceneView.getNodes().remove(currentModelNode);
         }
 
-        Toast.makeText(this, "Loading Engine Model...", Toast.LENGTH_SHORT).show();
-        
+        Toast.makeText(this, "Engine: Loading 3D Logic...", Toast.LENGTH_SHORT).show();
+
+        // Naya Model Node create karna
         currentModelNode = new ModelNode(sceneView.getEngine());
+        
+        // Java Compatible Method Call
         currentModelNode.loadModelAsync(
                 this,
-                Uri.parse(uriString),
-                null, // lifecycle
+                uriPath,
                 true, // autoAnimate
                 0.5f, // scale
                 null, // center
@@ -107,20 +109,26 @@ public class MainActivity extends ComponentActivity {
         );
     }
 
-    private void applyFullscreenLogic() {
+    private void setupEngineUI() {
+        Window window = getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.setStatusBarColor(Color.BLACK);
+    }
+
+    private void applyFullscreen() {
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION 
-                | View.SYSTEM_UI_FLAG_FULLSCREEN      
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
         );
     }
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) applyFullscreenLogic();
+        if (hasFocus) applyFullscreen();
     }
 }
