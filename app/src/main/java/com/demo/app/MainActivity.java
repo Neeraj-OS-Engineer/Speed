@@ -19,6 +19,9 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import io.github.sceneview.SceneView;
 import io.github.sceneview.node.ModelNode;
 
+// Required for Kotlin Unit return
+import kotlin.Unit;
+
 public class MainActivity extends ComponentActivity {
 
     private SceneView sceneView;
@@ -78,10 +81,10 @@ public class MainActivity extends ComponentActivity {
     }
 
     private void renderModel(String uriPath) {
-        // Clean up previous model – destroy() is the correct method in 3.6.0
+        // Clean up previous model
         if (currentModelNode != null) {
             sceneView.removeChild(currentModelNode);
-            currentModelNode.destroy();   // ✅ valid in SceneView 3.6.0
+            currentModelNode.destroy();  // ✅ destroy() is valid in 3.6.0
         }
 
         Toast.makeText(this, "Engine: Loading 3D Model...", Toast.LENGTH_SHORT).show();
@@ -89,25 +92,23 @@ public class MainActivity extends ComponentActivity {
         Uri modelUri = Uri.parse(uriPath);
         currentModelNode = new ModelNode(sceneView.getEngine());
 
-        // ✅ Correct API for SceneView 3.6.0: loadModel() with a listener (Java-friendly)
-        currentModelNode.loadModel(
-                this,          // Context
-                modelUri,      // Uri
-                true,          // autoAnimate
-                0.5f,          // scale
-                null,          // center position
-                new ModelNode.LoadModelListener() {
-                    @Override
-                    public void onSuccess(ModelNode model) {
-                        sceneView.addChild(currentModelNode);
-                        Toast.makeText(MainActivity.this, "Rendering Active", Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onError(Throwable error) {
-                        Toast.makeText(MainActivity.this, "Failed: " + error.getMessage(), Toast.LENGTH_LONG).show();
-                        currentModelNode = null;
-                    }
+        // ✅ Correct way to call Kotlin loadModelAsync from Java
+        // Must return Unit.INSTANCE inside each lambda
+        currentModelNode.loadModelAsync(
+                this,           // Context
+                modelUri,       // Uri
+                true,           // autoAnimate
+                0.5f,           // scale
+                null,           // center (Vector3?)
+                model -> {      // onSuccess: (ModelNode) -> Unit
+                    sceneView.addChild(currentModelNode);
+                    Toast.makeText(this, "Rendering Active", Toast.LENGTH_SHORT).show();
+                    return Unit.INSTANCE;   // ✅ critical for Kotlin Unit
+                },
+                error -> {      // onError: (Throwable) -> Unit
+                    Toast.makeText(this, "Failed: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                    currentModelNode = null;
+                    return Unit.INSTANCE;   // ✅ critical for Kotlin Unit
                 }
         );
     }
