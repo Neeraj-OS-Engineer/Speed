@@ -25,16 +25,13 @@ android {
 }
 
 dependencies {
-    // 3D Engine - Groovy Style
-    implementation "io.github.sceneview:arsceneview:0.10.0"
-
-    
+    // Only one SceneView dependency – use the latest stable
     implementation 'io.github.sceneview:sceneview:3.6.0'
-    // Also need ARCore if using AR features (optional)
+    
+    // Required for ARCore (if you need AR features)
     implementation 'com.google.ar:core:1.39.0'
-    
-    
-    // Inhe bhi add karein takki libraries sahi se sync hon
+
+    // Android support libs
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.9.0'
 }
