@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.demo.app"
-        minSdk 21
+        minSdk 26
         targetSdk 34
         versionCode 1
         versionName "1.0"
@@ -25,7 +25,10 @@ android {
 }
 
 dependencies {
-    implementation("io.github.sceneview:sceneview:3.6.0")
-    implementation "androidx.appcompat:appcompat:1.6.1"
-    implementation "com.google.android.material:material:1.9.0" // Popups ke liye
+    // 3D Engine Library (Groovy Syntax)
+    implementation 'io.github.sceneview:sceneview:3.6.0'
+    
+    // Core Android Libraries
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
 }
