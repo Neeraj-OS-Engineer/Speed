@@ -26,7 +26,7 @@ public class MainActivity extends ComponentActivity {
     private SharedPreferences prefs;
     private ModelNode currentModelNode;
 
-    // File picker launcher – persistent URI permission granted
+    // File picker launcher with persistent URI permission
     private final ActivityResultLauncher<Intent> pickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -55,6 +55,7 @@ public class MainActivity extends ComponentActivity {
         btnRecent = findViewById(R.id.btnRecentModel);
         prefs = getSharedPreferences("SpeedEngineData", MODE_PRIVATE);
 
+        // Load last used model if exists
         String lastModelUri = prefs.getString("last_model_uri", "");
         if (!lastModelUri.isEmpty()) {
             btnRecent.setVisibility(View.VISIBLE);
@@ -78,11 +79,18 @@ public class MainActivity extends ComponentActivity {
         renderModel(uriPath);
     }
 
+    /**
+     * Renders a 3D model from a URI string.
+     * Fixed for SceneView 3.6.0:
+     * - Uses Uri parameter instead of String
+     * - Lambdas return null for Kotlin's Unit
+     * - Proper cleanup with cleanup() method
+     */
     private void renderModel(String uriPath) {
-        // Remove previous model cleanly to avoid memory leaks
+        // Clean up previous model to prevent memory leaks (GPU + heap)
         if (currentModelNode != null) {
             sceneView.removeChild(currentModelNode);
-            currentModelNode.destroy(); // free GPU resources if available
+            currentModelNode.cleanup();  // cleanup() is valid in 3.6.0, not destroy()
         }
 
         Toast.makeText(this, "Engine: Loading 3D Model...", Toast.LENGTH_SHORT).show();
@@ -90,22 +98,24 @@ public class MainActivity extends ComponentActivity {
         Uri modelUri = Uri.parse(uriPath);
         currentModelNode = new ModelNode(sceneView.getEngine());
 
-        // Correct async loading using Uri (no deprecated methods)
+        // CORRECT signature for SceneView 3.6.0:
+        // loadModelAsync(Context, Uri, Boolean, Float, Vector3?, (ModelNode) -> Unit, (Throwable) -> Unit)
         currentModelNode.loadModelAsync(
-                this,
-                modelUri,
-                true,      // autoAnimate
-                0.5f,      // scale
-                null,      // center (optional)
-                model -> {
+                this,           // Context
+                modelUri,       // Uri (NOT String!)
+                true,           // autoAnimate
+                0.5f,           // scale
+                null,           // center position (Vector3? = null)
+                model -> {      // onSuccess callback (returns Unit in Kotlin)
                     sceneView.addChild(currentModelNode);
                     Toast.makeText(this, "Rendering Active", Toast.LENGTH_SHORT).show();
-                    return null;
+                    return null; // CRITICAL: null maps to Kotlin's Unit
                 },
-                error -> {  // error callback
-                    Toast.makeText(this, "Failed to load model: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                error -> {      // onError callback (returns Unit in Kotlin)
+                    Toast.makeText(this, "Failed to load model: " + error.getMessage(),
+                            Toast.LENGTH_LONG).show();
                     currentModelNode = null;
-                    return null;
+                    return null; // CRITICAL: null maps to Kotlin's Unit
                 }
         );
     }
