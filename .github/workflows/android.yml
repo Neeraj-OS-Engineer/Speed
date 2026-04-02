@@ -1,4 +1,4 @@
-name: Android 3D Engine Build & Report
+name: Speed Engine Pro Build
 
 on:
   push:
@@ -7,15 +7,15 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
-  engine-build:
+  build-engine:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Repository se code fetch karna
+    # 1. Repository Checkout
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # 2. Java 17 Setup (SceneView/Filament ke liye mandatory)
+    # 2. Java 17 High-Performance Setup
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
@@ -23,37 +23,37 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    # 3. Gradle execution permission dena
-    - name: Grant execute permission for gradlew
+    # 3. Execution Permissions
+    - name: Grant Execute Permission
       run: chmod +x gradlew
 
-    # 4. Library Audit (Check karega konsi library download hui aur size kya hai)
-    - name: Library Dependency Audit
-      run: ./gradlew app:dependencies > library_audit.txt
+    # 4. APK Quality & Optimization Check
+    # Ye step compile karne se pehle check karega ki code smooth hai ya nahi
+    - name: Engine Optimization Check
+      run: ./gradlew lintDebug
 
-    # 5. Build Debug APK (Yahan se error ka pata chalega)
-    # Maine stacktrace aur info add kiya hai taaki detailed report mile
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug --stacktrace --info
+    # 5. Build Multiple APKs (Debug & Release Checker)
+    # Isse aapko do alag-alag variants milenge
+    - name: Generate Smooth APKs
+# --parallel se build fast hogi aur crash-free compile karega
+      run: ./gradlew assemble --parallel --stacktrace
 
-    # 6. Build Reports aur APK ko Upload karna (ZIP Package)
-    # 'if: always()' ensures ki fail hone par bhi aapko logs milein
-    - name: Upload Build Artifacts
-      if: always()
+    # 6. Final APK Packaging (Direct Download)
+    # Isme sirf APKs honge, koi फालतू text files nahi
+    - name: Upload High-Quality APKs
       uses: actions/upload-artifact@v4
       with:
-        name: 3D-Engine-Build-Package
+        name: Speed-Engine-Builds
         path: |
           app/build/outputs/apk/debug/*.apk
-          app/build/reports/
-          library_audit.txt
+          app/build/outputs/apk/release/*.apk
 
-    # 7. Final Verification
-    - name: Final Build Check
+    # 7. Smoothness Verification
+    - name: Final Integrity Check
       run: |
         if [ ! -f app/build/outputs/apk/debug/app-debug.apk ]; then
-          echo "BUILD FAILED! Check the 'Actions' tab log or download Artifacts."
+          echo "ERROR: Build Failed. Logic check karein."
           exit 1
         else
-          echo "BUILD SUCCESSFUL! APK is ready."
+          echo "SUCCESS: Smooth APKs are ready for testing."
         fi
