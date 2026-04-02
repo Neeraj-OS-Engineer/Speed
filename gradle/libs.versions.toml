@@ -1,0 +1,17 @@
+[versions]
+agp = "8.1.0"
+gdx = "1.12.1"
+media3 = "1.4.1"
+camera = "1.4.1"
+androidxCore = "1.12.0"
+androidxAppcompat = "1.7.0"
+material = "1.12.0"
+gson = "2.10.1"
+
+[libraries]
+# These are only for reference – we will not use them in app/build.gradle
+# We keep them here so that libs.versions.* works.
+# (No dependency entries needed because we use string notation)
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }

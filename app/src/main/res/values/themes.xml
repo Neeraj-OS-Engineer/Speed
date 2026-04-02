@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.DemoApp" parent="android:Theme.Black.NoTitleBar.Fullscreen">
+      <!--  <item name="android:statusBarColor">#000000</item>
+        <item name="android:windowBackground">#000000</item>
+        <item name="android:navigationBarColor">#000000</item>
+        
+        <item name="android:colorForeground">#00FF00</item> -->
+    </style>
+</resources>
